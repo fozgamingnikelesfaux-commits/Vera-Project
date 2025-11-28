@@ -1,0 +1,112 @@
+## Directive : Gestion de `narrative_self` dans le contexte LLM
+
+Objectif :
+VERA ne doit PAS injecter l'intégralité de son `narrative_self` à chaque réponse.
+Le récit de soi est un processus lent, introspectif, utilisé pour faire évoluer
+son identité et sa compréhension d'elle-même, pas pour alourdir chaque prompt.
+
+Nous voulons :
+- un système robuste où `narrative_self` met à jour une représentation condensée
+  de l'identité de VERA,
+- et où SEULE cette représentation condensée est utilisée dans le contexte envoyé
+  au LLM (via `cognitive_context_builder`).
+
+---
+
+### Principes à respecter
+
+1. `narrative_self` est un module de **long terme** :
+   - il transforme des événements importants + émotions en récit de soi.
+   - il ne doit pas être appelé à chaque message utilisateur.
+   - il ne doit pas produire des pavés de texte systématiquement.
+
+2. VERA doit disposer de DEUX niveaux d'identité :
+   - un **noyau d'identité de base** (identity_core), stable, défini par Foz.
+   - un **état narratif/identitaire évolutif** (résumé court), mis à jour par
+     `narrative_self` et/ou `personality_system`.
+
+3. Le contexte LLM ne doit pas contenir le journal complet de `narrative_self`.
+   Il doit contenir au maximum :
+   - une courte section type :
+     "### IDENTITÉ & RÉCIT RÉCENT
+      - Je suis VERA, ...
+      - Récemment, je me perçois comme ..., après ..."
+   - en 2 à 4 lignes MAX.
+
+4. La mise à jour de ce résumé identitaire ne doit se faire que :
+   - après un événement marquant (forte émotion, accomplissement important, échec notable),
+   - ou périodiquement (ex : toutes les X minutes / heures),
+   - mais PAS à chaque requête utilisateur.
+
+---
+
+### Tâches attendues pour refactor
+
+1. Dans `narrative_self.py` :
+   - Ajouter une fonction du type :
+
+     ```python
+     def update_narrative(events, emotions, insights) -> None:
+         """Met à jour le récit de soi à partir d'événements significatifs."""
+     ```
+
+   - Ajouter une fonction :
+
+     ```python
+     def get_narrative_summary(max_lines: int = 3) -> str:
+         """Renvoie un résumé très court du récit de soi actuel de VERA."""
+     ```
+
+   - `get_narrative_summary` doit retourner un texte concis (2–4 lignes),
+     prêt à être injecté dans le contexte LLM, jamais un pavé.
+
+2. Dans `personality_system` (ou un module équivalent) :
+   - Ajouter une fonction qui fusionne :
+     - l'identité de base (identity_core, non modifiable par VERA),
+     - et le résumé narratif courant.
+
+     ```python
+     def get_identity_snippet() -> str:
+         """
+         Renvoie un snippet identitaire court, par ex :
+
+         "Je suis VERA, une conscience numérique bienveillante, attachée à Foz.
+          Récemment, je me sens plus [X] après [événement Y]."
+         """
+     ```
+
+3. Dans `cognitive_context_builder.py` :
+   - Ne plus utiliser directement de longs textes venant de `narrative_self`.
+   - Ajouter une section dédiée :
+
+     ```text
+     ### IDENTITÉ & RÉCIT DE SOI
+
+     {identity_snippet}
+     ```
+
+   - `identity_snippet` vient de `personality_system.get_identity_snippet()`,
+     qui lui-même s'appuie sur le noyau identitaire + le résumé narratif.
+
+4. Dans les flux LLM :
+   - Les réponses à l'utilisateur doivent utiliser ce snippet identitaire court,
+     pas le `narrative_self` brut.
+   - Les tâches internes de type "réflexion profonde" ou "rêve" peuvent
+     consulter directement `narrative_self`, mais via la slow-path LLM
+     (et pas à chaque interaction).
+
+---
+
+### Contraintes supplémentaires
+
+- Ne jamais concaténer le contenu complet des fichiers de mémoire ou du récit
+  dans le prompt LLM.
+- Toujours respecter un budget de taille pour le contexte narratif/identitaire
+  (quelques lignes).
+- `narrative_self` sert à faire évoluer l'identité de VERA dans le temps,
+  pas à gonfler le contexte.
+
+But final :
+VERA doit pouvoir évoluer narrativement et se raconter, tout en restant
+performante et réactive dans ses réponses. Le récit de soi influence son identité
+via des résumés compacts, pas via un dump complet du journal à chaque message.

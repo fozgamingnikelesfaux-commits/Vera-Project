@@ -1,0 +1,24 @@
+   1. Remplacer le "Cœur à Tick" par un "Cœur Événementiel" :
+       * La boucle while True: time.sleep(5) dans consciousness_orchestrator.py sera complètement supprimée.
+       * Elle sera remplacée par une boucle qui attend passivement qu'un événement arrive dans une nouvelle file
+         d'attente centrale.
+
+   2. Créer un "Bus d'Événements" Central :
+       * Nous allons créer une file d'attente globale unique (un "Event Bus") où tous les modules pourront poster des
+         "messages" (des événements).
+
+   3. Modifier les Modules de Monitoring :
+       * system_monitor.py et user_activity_monitor.py seront modifiés. Au lieu de simplement mettre à jour un état,
+         ils émettront un événement sur le "Bus d'Événements" uniquement si un seuil est franchi (ex: CPU > 80%,
+         utilisateur devient AFK).
+
+   4. Prioriser les Tâches de Fond :
+       * La slow_path_task_queue actuelle sera transformée en une file d'attente avec un système de priorités. Cela
+         assurera que les tâches liées à vos requêtes soient toujours traitées avant les réflexions internes de Vera.
+
+   5. Redéfinir le Rôle de l'Orchestrateur :
+       * Le ConsciousnessOrchestrator deviendra un processeur d'événements. Son rôle sera de prendre un événement,
+         d'analyser le contexte actuel, et de décider de la meilleure suite à donner (mettre à jour une émotion,
+         programmer une tâche LLM, etc.).
+
+

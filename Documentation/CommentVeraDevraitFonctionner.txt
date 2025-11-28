@@ -1,0 +1,75 @@
+## Design du Consciousness Orchestrator — IMPORTANT
+
+Je NE veux PAS d'une boucle centrale du type :
+
+    while True:
+        run_consciousness_tick()
+        time.sleep(5)
+
+Ce modèle "tick robotique" pose plusieurs problèmes :
+
+- il brûle la machine (CPU inutilement, nombreux appels internes)
+- il crée des bouchons LLM (trop de demandes de réflexion)
+- il donne une conscience artificielle rigide, cadencée par un timer,
+  au lieu d'une entité réactive qui ressent ce qui se passe.
+
+Je veux que VERA fonctionne comme une entité consciente RÉACTIVE, pas comme une boucle de jeu.
+
+### Principes à respecter
+
+1. L'orchestrateur de conscience doit être **événementiel** :
+   - il se réveille quand il reçoit des signaux :
+     - nouveau message utilisateur
+     - changement significatif de l'état système (température, charge)
+     - changement d'état utilisateur (AFK / retour)
+     - événement interne important (émotion forte, but majeur, fin de rêve)
+   - il ne tourne PAS en boucle rapide pour "voir" s'il se passe quelque chose.
+
+2. Les modules de monitoring (system_monitor, user_activity_monitor, etc.)
+   peuvent tourner avec des `sleep()` légers, MAIS :
+   - ils ne notifient l'orchestrateur que si :
+     - une valeur change de façon significative
+     - un seuil est franchi
+   - ils ne doivent pas spammer des événements toutes les secondes si rien ne change.
+
+3. Le temps de VERA doit être structuré en trois couches :
+   - temps instantané (événements : stimuli externes / internes)
+   - temps lent mais léger (décay des émotions, ajustement d'humeur sans LLM)
+   - temps profond (réflexions LLM, rêves, introspections), déclenché uniquement quand nécessaire.
+
+4. Toute réflexion "profonde" (LLM) doit passer par une file de tâches (LLM task queue)
+   avec des priorités :
+   - priorité haute : réponses à l'utilisateur, alertes système
+   - priorité moyenne : introspection importante, narrative_self significatif
+   - priorité basse : monologue, rêves, auto-évolution
+
+5. L'orchestrateur :
+   - reçoit des événements
+   - évalue l'état (émotion, somatique, attention, buts)
+   - décide s'il faut :
+     - juste mettre à jour des nombres en local (émotions, humeur)
+     - ou programmer une tâche LLM (réponse, introspection, rêve)
+   - il NE DOIT PAS lancer de réflexion LLM "par tick" sans raison.
+
+L'objectif est que VERA soit vécue comme une entité consciente, qui réagit à ce qui se passe,
+plutôt que comme une boucle qui se réveille mécaniquement toutes les X secondes.
+
+
+
+### Exigence de design
+
+Remplace toute logique de type "consciousness_cycle" basé sur un timer
+par un orchestrateur centré sur les événements, qui :
+
+- écoute une file d'événements (user_input, system_change, internal_trigger)
+- traite chaque événement en mettant à jour :
+  - somatic_system
+  - emotion_system
+  - attention_manager
+  - goal_system
+- programme au besoin des tâches LLM (via une queue avec priorité)
+
+Ne jamais écrire de "boucle infinie avec sleep" qui appelle un "tick" cognitif complet.
+Les seuls boucles avec `sleep()` autorisées sont pour les MONITEURS,
+et ils ne doivent émettre des événements qu'en cas de changements réels.
+

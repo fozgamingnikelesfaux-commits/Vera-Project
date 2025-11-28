@@ -1,0 +1,52 @@
+# Python environments
+venv/
+.venv/
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+
+# Databases - IMPORTANT for user's personal data
+data/
+*.db
+*.sqlite
+*.sqlite3
+
+# Logs and temporary files
+logs/
+consolelog/
+*.log
+traceback*.txt
+full_console_output_*.log
+19.txt
+pourgpt24112025.zip
+traceback20.txt
+traceback221.txt
+
+# IDE / Editor specific
+.idea/
+.vscode/
+*.swp
+*.swo
+
+# Secrets - IMPORTANT for API keys
+config_secrets.py
+.env
+
+# Pytest cache
+.pytest_cache/
+
+# OS specific
+.DS_Store
+Thumbs.db
+
+# Secret files
+data/config_secrets.json
+
+# Large asset files (manual backup needed)
+assets/
+*.kra
+public/assets/VERA.glb
+
+# Archives (should not be committed)
+*.zip
